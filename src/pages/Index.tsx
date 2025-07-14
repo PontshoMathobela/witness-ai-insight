@@ -1,28 +1,32 @@
 import { useState } from "react";
 import Hero from "@/components/Hero";
-import AnalysisForm from "@/components/AnalysisForm";
+import RecordingSession from "@/components/RecordingSession";
+import LiveAnalysis from "@/components/LiveAnalysis";
 import AnalysisResults from "@/components/AnalysisResults";
 import SDGSection from "@/components/SDGSection";
 
 const Index = () => {
-  const [analysisData, setAnalysisData] = useState<{
+  const [liveAnalysisData, setLiveAnalysisData] = useState<{
+    transcription: string;
+    duration: number;
+  } | null>(null);
+  const [finalAnalysisData, setFinalAnalysisData] = useState<{
     statement: string;
     caseId: string;
   } | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const handleAnalyze = async (statement: string, caseId: string) => {
-    setIsAnalyzing(true);
+  const handleLiveAnalysis = (transcription: string, duration: number) => {
+    setLiveAnalysisData({ transcription, duration });
     
-    // Simulate analysis processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setAnalysisData({ statement, caseId });
-    setIsAnalyzing(false);
+    // Set final analysis data for completed recording
+    setFinalAnalysisData({ 
+      statement: transcription, 
+      caseId: `RECORDED-${Date.now()}` 
+    });
     
     // Scroll to results
     setTimeout(() => {
-      const resultsSection = document.querySelector('[data-results]');
+      const resultsSection = document.querySelector('[data-analysis-results]');
       if (resultsSection) {
         resultsSection.scrollIntoView({ behavior: 'smooth' });
       }
@@ -32,15 +36,25 @@ const Index = () => {
   return (
     <div className="min-h-screen">
       <Hero />
-      <AnalysisForm onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} />
-      {analysisData && (
-        <div data-results>
+      <RecordingSession onAnalysis={handleLiveAnalysis} />
+      
+      {liveAnalysisData && (
+        <LiveAnalysis 
+          transcription={liveAnalysisData.transcription}
+          duration={liveAnalysisData.duration}
+          isLive={false}
+        />
+      )}
+      
+      {finalAnalysisData && (
+        <div data-analysis-results>
           <AnalysisResults 
-            statement={analysisData.statement} 
-            caseId={analysisData.caseId} 
+            statement={finalAnalysisData.statement} 
+            caseId={finalAnalysisData.caseId} 
           />
         </div>
       )}
+      
       <SDGSection />
     </div>
   );
