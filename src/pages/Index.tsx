@@ -1,12 +1,47 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import Hero from "@/components/Hero";
+import AnalysisForm from "@/components/AnalysisForm";
+import AnalysisResults from "@/components/AnalysisResults";
+import SDGSection from "@/components/SDGSection";
 
 const Index = () => {
+  const [analysisData, setAnalysisData] = useState<{
+    statement: string;
+    caseId: string;
+  } | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const handleAnalyze = async (statement: string, caseId: string) => {
+    setIsAnalyzing(true);
+    
+    // Simulate analysis processing
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    setAnalysisData({ statement, caseId });
+    setIsAnalyzing(false);
+    
+    // Scroll to results
+    setTimeout(() => {
+      const resultsSection = document.querySelector('[data-results]');
+      if (resultsSection) {
+        resultsSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen">
+      <Hero />
+      <AnalysisForm onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} />
+      {analysisData && (
+        <div data-results>
+          <AnalysisResults 
+            statement={analysisData.statement} 
+            caseId={analysisData.caseId} 
+          />
+        </div>
+      )}
+      <SDGSection />
     </div>
   );
 };
