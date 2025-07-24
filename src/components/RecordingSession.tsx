@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { VoiceRecorder } from 'capacitor-voice-recorder';
 import { 
   Mic, 
   MicOff, 
@@ -31,8 +30,11 @@ const RecordingSession = ({ onAnalysis }: RecordingSessionProps) => {
   const [caseId, setCaseId] = useState('');
   const [witnessName, setWitnessName] = useState('');
   const [sessionId] = useState(() => `SESSION-${Date.now()}`);
-  const [recordingPath, setRecordingPath] = useState<string | null>(null);
+  const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
   const { toast } = useToast();
+  
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   // Timer effect
   useEffect(() => {
@@ -49,7 +51,8 @@ const RecordingSession = ({ onAnalysis }: RecordingSessionProps) => {
   useEffect(() => {
     const requestPermissions = async () => {
       try {
-        await VoiceRecorder.requestAudioRecordingPermission();
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop()); // Stop the stream, we just needed permission
       } catch (error) {
         console.error('Permission request failed:', error);
         toast({
@@ -73,7 +76,18 @@ const RecordingSession = ({ onAnalysis }: RecordingSessionProps) => {
         return;
       }
 
-      await VoiceRecorder.startRecording();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.start();
       setIsRecording(true);
       setIsPaused(false);
       setDuration(0);
@@ -93,6 +107,13 @@ const RecordingSession = ({ onAnalysis }: RecordingSessionProps) => {
   };
 
   const pauseRecording = () => {
+    if (mediaRecorderRef.current) {
+      if (isPaused) {
+        mediaRecorderRef.current.resume();
+      } else {
+        mediaRecorderRef.current.pause();
+      }
+    }
     setIsPaused(!isPaused);
     toast({
       title: isPaused ? "Recording Resumed" : "Recording Paused",
@@ -102,14 +123,22 @@ const RecordingSession = ({ onAnalysis }: RecordingSessionProps) => {
 
   const stopRecording = async () => {
     try {
-      const result = await VoiceRecorder.stopRecording();
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+        
+        mediaRecorderRef.current.onstop = () => {
+          const blob = new Blob(chunksRef.current, { type: 'audio/wav' });
+          setRecordingBlob(blob);
+        };
+      }
+      
       setIsRecording(false);
       setIsPaused(false);
-      setRecordingPath(result.value.recordDataBase64);
       
       // Simulate transcription process
       setTimeout(() => {
-        const mockTranscription = `Court session recording for case ${caseId}. Witness ${witnessName || 'Unknown'} testimony recorded for ${formatDuration(duration)}. [This is a simulated transcription. In a real implementation, this would be processed by a speech-to-text service.]`;
+        const mockTranscription = `Court session recording for case ${caseId}. Witness ${witnessName || 'Unknown'} testimony recorded for ${formatDuration(duration)}. [This is a simulated transcription. In a real implementation, this would be processed by a speech-to-text service like Whisper.]`;
         setTranscription(mockTranscription);
         onAnalysis(mockTranscription, duration);
       }, 2000);
@@ -139,8 +168,16 @@ const RecordingSession = ({ onAnalysis }: RecordingSessionProps) => {
   };
 
   const downloadRecording = () => {
-    if (recordingPath) {
-      // In a real app, this would trigger a download
+    if (recordingBlob) {
+      const url = URL.createObjectURL(recordingBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `court-recording-${caseId}-${sessionId}.wav`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
       toast({
         title: "Download Started",
         description: "Recording file download has been initiated.",
@@ -294,7 +331,7 @@ const RecordingSession = ({ onAnalysis }: RecordingSessionProps) => {
                       <p className="text-sm leading-relaxed">{transcription}</p>
                     </div>
                     
-                    {recordingPath && (
+                    {recordingBlob && (
                       <div className="flex gap-2">
                         <Button
                           onClick={downloadRecording}
