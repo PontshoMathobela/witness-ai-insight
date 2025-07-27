@@ -19,7 +19,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 interface RecordingSessionProps {
-  onAnalysis: (transcription: string, duration: number) => void;
+  onAnalysis: (transcription: string, duration: number, statementId: string) => void;
 }
 
 const RecordingSession = ({ onAnalysis }: RecordingSessionProps) => {
@@ -140,7 +140,7 @@ const RecordingSession = ({ onAnalysis }: RecordingSessionProps) => {
       setTimeout(() => {
         const mockTranscription = `Court session recording for case ${caseId}. Witness ${witnessName || 'Unknown'} testimony recorded for ${formatDuration(duration)}. [This is a simulated transcription. In a real implementation, this would be processed by a speech-to-text service like Whisper.]`;
         setTranscription(mockTranscription);
-        onAnalysis(mockTranscription, duration);
+        onAnalysis(mockTranscription, duration, `MOCK-${caseId}-${Date.now()}`);
       }, 2000);
 
       toast({

@@ -15,13 +15,13 @@ const Index = () => {
     caseId: string;
   } | null>(null);
 
-  const handleLiveAnalysis = (transcription: string, duration: number) => {
+  const handleLiveAnalysis = (transcription: string, duration: number, statementId: string) => {
     setLiveAnalysisData({ transcription, duration });
     
     // Set final analysis data for completed recording
     setFinalAnalysisData({ 
       statement: transcription, 
-      caseId: `RECORDED-${Date.now()}` 
+      caseId: statementId 
     });
     
     // Scroll to results
