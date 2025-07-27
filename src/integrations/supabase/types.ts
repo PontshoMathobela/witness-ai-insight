@@ -14,7 +14,116 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      analysis_results: {
+        Row: {
+          cbca_details: Json
+          cbca_score: number
+          created_at: string
+          detected_inconsistencies: Json | null
+          emotional_indicators: Json | null
+          id: string
+          overall_credibility: number
+          processing_time_ms: number | null
+          rm_details: Json
+          rm_score: number
+          statement_id: string
+        }
+        Insert: {
+          cbca_details: Json
+          cbca_score: number
+          created_at?: string
+          detected_inconsistencies?: Json | null
+          emotional_indicators?: Json | null
+          id?: string
+          overall_credibility: number
+          processing_time_ms?: number | null
+          rm_details: Json
+          rm_score: number
+          statement_id: string
+        }
+        Update: {
+          cbca_details?: Json
+          cbca_score?: number
+          created_at?: string
+          detected_inconsistencies?: Json | null
+          emotional_indicators?: Json | null
+          id?: string
+          overall_credibility?: number
+          processing_time_ms?: number | null
+          rm_details?: Json
+          rm_score?: number
+          statement_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_results_statement_id_fkey"
+            columns: ["statement_id"]
+            isOneToOne: false
+            referencedRelation: "witness_statements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analysis_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          session_name: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_name?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_name?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      witness_statements: {
+        Row: {
+          audio_file_path: string | null
+          case_id: string
+          created_at: string
+          id: string
+          statement_text: string
+          transcription_confidence: number | null
+          updated_at: string
+          user_id: string | null
+          witness_name: string | null
+        }
+        Insert: {
+          audio_file_path?: string | null
+          case_id: string
+          created_at?: string
+          id?: string
+          statement_text: string
+          transcription_confidence?: number | null
+          updated_at?: string
+          user_id?: string | null
+          witness_name?: string | null
+        }
+        Update: {
+          audio_file_path?: string | null
+          case_id?: string
+          created_at?: string
+          id?: string
+          statement_text?: string
+          transcription_confidence?: number | null
+          updated_at?: string
+          user_id?: string | null
+          witness_name?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
