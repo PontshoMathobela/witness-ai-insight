@@ -17,6 +17,7 @@ import {
   Scale
 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RecordingSessionProps {
   onAnalysis: (transcription: string, duration: number, statementId: string) => void;
@@ -127,27 +128,61 @@ const RecordingSession = ({ onAnalysis }: RecordingSessionProps) => {
         mediaRecorderRef.current.stop();
         mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
         
-        mediaRecorderRef.current.onstop = () => {
-          const blob = new Blob(chunksRef.current, { type: 'audio/wav' });
+        mediaRecorderRef.current.onstop = async () => {
+          const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
           setRecordingBlob(blob);
+          
+          // Convert blob to base64 for transcription
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            try {
+              const base64Audio = (reader.result as string).split(',')[1];
+              
+              toast({
+                title: "Processing Recording",
+                description: "Transcribing audio with AI...",
+              });
+
+              // Call transcribe-audio edge function
+              const { data, error } = await supabase.functions.invoke('transcribe-audio', {
+                body: {
+                  audioData: base64Audio,
+                  caseId,
+                  witnessName: witnessName || 'Unknown',
+                  duration
+                }
+              });
+
+              if (error) {
+                console.error('Transcription error:', error);
+                throw new Error('Failed to transcribe audio');
+              }
+
+              const transcriptionText = data.transcription;
+              setTranscription(transcriptionText);
+              onAnalysis(transcriptionText, duration, data.statementId);
+
+              toast({
+                title: "Recording Completed",
+                description: "Audio transcribed successfully and ready for analysis.",
+              });
+            } catch (transcriptionError) {
+              console.error('Transcription failed:', transcriptionError);
+              toast({
+                title: "Transcription Failed",
+                description: "Failed to process audio. Please try again.",
+                variant: "destructive"
+              });
+            }
+          };
+          reader.readAsDataURL(blob);
         };
       }
       
       setIsRecording(false);
       setIsPaused(false);
-      
-      // Simulate transcription process
-      setTimeout(() => {
-        const mockTranscription = `Court session recording for case ${caseId}. Witness ${witnessName || 'Unknown'} testimony recorded for ${formatDuration(duration)}. [This is a simulated transcription. In a real implementation, this would be processed by a speech-to-text service like Whisper.]`;
-        setTranscription(mockTranscription);
-        onAnalysis(mockTranscription, duration, `MOCK-${caseId}-${Date.now()}`);
-      }, 2000);
-
-      toast({
-        title: "Recording Completed",
-        description: "Court session has been recorded and is being processed for analysis.",
-      });
     } catch (error) {
+      console.error('Recording error:', error);
       toast({
         title: "Recording Error",
         description: "Failed to stop recording. Please try again.",
