@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, CheckCircle, Info, TrendingUp, Activity, Clock } from "lucide-react";
+import { performRealTimeAnalysis } from "@/lib/featureExtraction";
 
 interface LiveAnalysisProps {
   transcription: string;
@@ -10,12 +11,17 @@ interface LiveAnalysisProps {
 }
 
 const LiveAnalysis = ({ transcription, duration, isLive = false }: LiveAnalysisProps) => {
-  // Real-time analysis calculations
-  const wordCount = transcription.split(' ').length;
+  // Enhanced real-time analysis using the new feature extraction
+  const realTimeAnalysis = performRealTimeAnalysis(transcription, duration);
+  
+  // Legacy calculations for compatibility
+  const wordCount = transcription.split(' ').filter(word => word.length > 0).length;
   const speechRate = duration > 0 ? (wordCount / (duration / 60)) : 0; // words per minute
-  const reliability = Math.max(60, Math.min(95, 70 + (wordCount / 20)));
-  const consistency = Math.max(65, Math.min(90, 75 + (transcription.length / 100)));
-  const biasLevel = Math.max(5, Math.min(40, 25 - (transcription.length / 200)));
+  
+  // Use enhanced metrics
+  const reliability = realTimeAnalysis.metrics.coherence;
+  const consistency = 100 - realTimeAnalysis.metrics.stress;
+  const biasLevel = Math.max(0, 100 - realTimeAnalysis.metrics.detail);
 
   const formatDuration = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -160,17 +166,30 @@ const LiveAnalysis = ({ transcription, duration, isLive = false }: LiveAnalysisP
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {biasLevel > 25 && (
-                    <div className="flex items-start gap-3 p-3 bg-warning/10 rounded-lg border border-warning/20">
-                      <AlertTriangle className="w-4 h-4 text-warning mt-0.5 flex-shrink-0" />
+                  {/* Enhanced real-time alerts */}
+                  {realTimeAnalysis.alerts.map((alert, index) => (
+                    <div key={index} className={`flex items-start gap-3 p-3 rounded-lg border ${
+                      realTimeAnalysis.status === 'concerning' ? 'bg-destructive/10 border-destructive/20' :
+                      realTimeAnalysis.status === 'warning' ? 'bg-warning/10 border-warning/20' :
+                      'bg-success/10 border-success/20'
+                    }`}>
+                      <AlertTriangle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+                        realTimeAnalysis.status === 'concerning' ? 'text-destructive' :
+                        realTimeAnalysis.status === 'warning' ? 'text-warning' :
+                        'text-success'
+                      }`} />
                       <div className="text-sm">
-                        <p className="font-medium text-warning">Potential Bias Detected</p>
-                        <p className="text-muted-foreground">Emotional language patterns identified</p>
+                        <p className={`font-medium ${
+                          realTimeAnalysis.status === 'concerning' ? 'text-destructive' :
+                          realTimeAnalysis.status === 'warning' ? 'text-warning' :
+                          'text-success'
+                        }`}>{alert}</p>
                       </div>
                     </div>
-                  )}
+                  ))}
 
-                  {speechRate > 180 && (
+                  {/* Legacy alerts for compatibility */}
+                  {speechRate > 180 && !realTimeAnalysis.alerts.includes('High stress levels detected') && (
                     <div className="flex items-start gap-3 p-3 bg-warning/10 rounded-lg border border-warning/20">
                       <Info className="w-4 h-4 text-warning mt-0.5 flex-shrink-0" />
                       <div className="text-sm">
@@ -180,17 +199,8 @@ const LiveAnalysis = ({ transcription, duration, isLive = false }: LiveAnalysisP
                     </div>
                   )}
 
-                  {consistency < 70 && (
-                    <div className="flex items-start gap-3 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
-                      <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
-                      <div className="text-sm">
-                        <p className="font-medium text-destructive">Consistency Issues</p>
-                        <p className="text-muted-foreground">Potential contradictions in testimony</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {biasLevel <= 15 && consistency >= 80 && speechRate >= 120 && speechRate <= 180 && (
+                  {/* Show success state when no alerts */}
+                  {realTimeAnalysis.alerts.length === 0 && realTimeAnalysis.status === 'good' && (
                     <div className="flex items-start gap-3 p-3 bg-success/10 rounded-lg border border-success/20">
                       <CheckCircle className="w-4 h-4 text-success mt-0.5 flex-shrink-0" />
                       <div className="text-sm">
