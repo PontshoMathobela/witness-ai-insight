@@ -15,20 +15,24 @@ const Index = () => {
     caseId: string;
   } | null>(null);
 
-  const handleLiveAnalysis = (transcription: string, duration: number, statementId: string) => {
+  const handleLiveAnalysis = (
+    transcription: string,
+    duration: number,
+    statementId: string
+  ) => {
     setLiveAnalysisData({ transcription, duration });
-    
+
     // Set final analysis data for completed recording
-    setFinalAnalysisData({ 
-      statement: transcription, 
-      caseId: statementId 
+    setFinalAnalysisData({
+      statement: transcription,
+      caseId: statementId,
     });
-    
+
     // Scroll to results
     setTimeout(() => {
-      const resultsSection = document.querySelector('[data-analysis-results]');
+      const resultsSection = document.querySelector("[data-analysis-results]");
       if (resultsSection) {
-        resultsSection.scrollIntoView({ behavior: 'smooth' });
+        resultsSection.scrollIntoView({ behavior: "smooth" });
       }
     }, 100);
   };
@@ -36,25 +40,26 @@ const Index = () => {
   return (
     <div className="min-h-screen">
       <Hero />
+      {/* RecordingSession handles live speech recognition and triggers handleLiveAnalysis */}
       <RecordingSession onAnalysis={handleLiveAnalysis} />
-      
+
       {liveAnalysisData && (
-        <LiveAnalysis 
+        <LiveAnalysis
           transcription={liveAnalysisData.transcription}
           duration={liveAnalysisData.duration}
           isLive={false}
         />
       )}
-      
+
       {finalAnalysisData && (
         <div data-analysis-results>
-          <AnalysisResults 
-            statement={finalAnalysisData.statement} 
-            caseId={finalAnalysisData.caseId} 
+          <AnalysisResults
+            statement={finalAnalysisData.statement}
+            caseId={finalAnalysisData.caseId}
           />
         </div>
       )}
-      
+
       <SDGSection />
     </div>
   );
