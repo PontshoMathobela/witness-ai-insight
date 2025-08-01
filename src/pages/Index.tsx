@@ -1,31 +1,26 @@
 import { useState } from "react";
-import Hero from "@/components/Hero";
-import RecordingSession from "@/components/RecordingSession";
-import LiveAnalysis from "@/components/LiveAnalysis";
-import AnalysisResults from "@/components/AnalysisResults";
-import SDGSection from "@/components/SDGSection";
+import Navigation from "@/components/Navigation";
+import JusticeHero from "@/components/JusticeHero";
+import LiveTranscriptionPanel from "@/components/LiveTranscriptionPanel";
+import ProfessionalAnalysisResults from "@/components/ProfessionalAnalysisResults";
+import CaseHistory from "@/components/CaseHistory";
 
 const Index = () => {
-  const [liveAnalysisData, setLiveAnalysisData] = useState<{
-    transcription: string;
-    duration: number;
-  } | null>(null);
-  const [finalAnalysisData, setFinalAnalysisData] = useState<{
+  const [analysisData, setAnalysisData] = useState<{
     statement: string;
     caseId: string;
+    duration: number;
   } | null>(null);
 
-  const handleLiveAnalysis = (
+  const handleAnalysis = (
     transcription: string,
     duration: number,
     statementId: string
   ) => {
-    setLiveAnalysisData({ transcription, duration });
-
-    // Set final analysis data for completed recording
-    setFinalAnalysisData({
+    setAnalysisData({
       statement: transcription,
       caseId: statementId,
+      duration,
     });
 
     // Scroll to results
@@ -38,29 +33,22 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen">
-      <Hero />
-      {/* RecordingSession handles live speech recognition and triggers handleLiveAnalysis */}
-      <RecordingSession onAnalysis={handleLiveAnalysis} />
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      <JusticeHero />
+      <LiveTranscriptionPanel onAnalysis={handleAnalysis} />
 
-      {liveAnalysisData && (
-        <LiveAnalysis
-          transcription={liveAnalysisData.transcription}
-          duration={liveAnalysisData.duration}
-          isLive={false}
-        />
-      )}
-
-      {finalAnalysisData && (
+      {analysisData && (
         <div data-analysis-results>
-          <AnalysisResults
-            statement={finalAnalysisData.statement}
-            caseId={finalAnalysisData.caseId}
+          <ProfessionalAnalysisResults
+            statement={analysisData.statement}
+            caseId={analysisData.caseId}
+            duration={analysisData.duration}
           />
         </div>
       )}
 
-      <SDGSection />
+      <CaseHistory />
     </div>
   );
 };

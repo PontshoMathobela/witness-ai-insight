@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import WitnessPage from "./pages/Witness"; // ✅ NEW import
+import WitnessPage from "./pages/witness"; // ✅ Fixed import
 
 const queryClient = new QueryClient();
 
